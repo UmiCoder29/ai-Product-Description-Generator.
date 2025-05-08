@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Product Description Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" />
+    <style>
+        :root {
+            --primary-color: #000000;
+            --secondary-color: #ffffff;
+            --accent-color: #333333;
+            --hover-color: #1a1a1a;
+            --border-color: #2a2a2a;
+            --card-bg: #1c1c1c;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+        }
+
+        body {
+            background-color: #121212;
+            color: var(--text-primary);
+        }
+
+        .gradient-bg {
+            background: linear-gradient(120deg, #000000 0%, #1a1a1a 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gradient-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-input {
+            background: var(--card-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            border-color: var(--text-primary);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .submit-button {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+
+        .submit-button:hover::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--text-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .form-input {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .card {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12" data-aos="fade-down">
+            <h1 class="text-4xl font-bold text-white mb-4">AI Product Description Generator</h1>
+            <p class="text-gray-300">Generate compelling product descriptions with AI</p>
+        </header>
+
+        <div class="max-w-2xl mx-auto">
+            <div class="card rounded-lg shadow-xl p-6 mb-8" data-aos="fade-up">
+                <form id="productForm" class="space-y-4">
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2" for="productName">
+                            Product Name
+                        </label>
+                        <input type="text" id="productName" name="productName" 
+                               class="w-full px-3 py-2 form-input rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
+                               placeholder="e.g., Premium Wireless Headphones">
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2" for="productCategory">
+                            Product Category
+                        </label>
+                        <input type="text" id="productCategory" name="productCategory" 
+                               class="w-full px-3 py-2 form-input rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
+                               placeholder="e.g., Electronics, Fashion, Home & Garden">
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2" for="keyFeatures">
+                            Key Features (comma-separated)
+                        </label>
+                        <input type="text" id="keyFeatures" name="keyFeatures" 
+                               class="w-full px-3 py-2 form-input rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
+                               placeholder="e.g., Noise cancellation, 30-hour battery, Premium sound">
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2" for="tone">
+                            Description Tone
+                        </label>
+                        <select id="tone" name="tone" 
+                                class="w-full px-3 py-2 form-input rounded-lg focus:outline-none focus:ring-2 focus:ring-white">
+                            <option value="professional">Professional</option>
+                            <option value="casual">Casual</option>
+                            <option value="luxury">Luxury</option>
+                            <option value="technical">Technical</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" 
+                            class="w-full bg-white text-black py-2 px-4 rounded-lg hover:bg-gray-200 transition duration-300 submit-button">
+                        Generate Description
+                    </button>
+                </form>
+            </div>
+
+            <div id="result" class="card rounded-lg shadow-xl p-6 hidden" data-aos="fade-up">
+                <h2 class="text-2xl font-bold text-white mb-4">Generated Description</h2>
+                <div id="generatedText" class="bg-gray-900 p-4 rounded-lg text-gray-300"></div>
+                <button id="copyButton" 
+                        class="mt-4 bg-white text-black py-2 px-4 rounded-lg hover:bg-gray-200 transition duration-300">
+                    Copy to Clipboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <script>
+        AOS.init({
+            duration: 800,
+            once: true,
+            offset: 50
+        });
+
+        // Loading state management
+        function showLoading() {
+            document.querySelector('.loading-overlay').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.querySelector('.loading-overlay').classList.remove('active');
+        }
+
+        // Toast notification system
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        document.getElementById('productForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const productName = document.getElementById('productName').value;
+            const productCategory = document.getElementById('productCategory').value;
+            const keyFeatures = document.getElementById('keyFeatures').value;
+            const tone = document.getElementById('tone').value;
+
+            if (!productName || !productCategory || !keyFeatures) {
+                showToast('Please fill in all required fields');
+                return;
+            }
+
+            showLoading();
+            const resultDiv = document.getElementById('result');
+            const generatedText = document.getElementById('generatedText');
+            resultDiv.classList.remove('hidden');
+            generatedText.innerHTML = 'Generating description...';
+
+            try {
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                const description = generateDescription(productName, productCategory, keyFeatures, tone);
+                generatedText.innerHTML = description;
+                showToast('Description generated successfully!');
+            } catch (error) {
+                generatedText.innerHTML = 'Error generating description. Please try again.';
+                showToast('Error generating description');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        document.getElementById('copyButton').addEventListener('click', () => {
+            const text = document.getElementById('generatedText').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Description copied to clipboard!');
+            }).catch(() => {
+                showToast('Failed to copy to clipboard');
+            });
+        });
+
+        function generateDescription(name, category, features, tone) {
+            const featuresList = features.split(',').map(f => f.trim());
+            const featureBullets = featuresList.map(f => `• ${f}`).join('\n');
+
+            const templates = {
+                professional: `Introducing the ${name}, a premium addition to our ${category} collection. This exceptional product combines innovation with reliability to deliver an unmatched experience.
+
+Key Features:
+${featureBullets}
+
+Elevate your ${category} experience with the ${name} - where quality meets performance.`,
+                
+                casual: `Hey there! Check out our awesome ${name} - it's perfect for your ${category} needs! We've packed it with everything you could want:
+
+${featureBullets}
+
+Trust us, you're gonna love it!`,
+                
+                luxury: `Experience the epitome of sophistication with the ${name}. This exquisite addition to our ${category} collection represents the pinnacle of luxury and craftsmanship.
+
+Notable Features:
+${featureBullets}
+
+Indulge in the extraordinary with the ${name} - where elegance meets excellence.`,
+                
+                technical: `The ${name} represents a breakthrough in ${category} technology. Engineered with precision and built to exacting standards, this product delivers exceptional performance.
+
+Technical Specifications:
+${featureBullets}
+
+Optimize your ${category} experience with the advanced capabilities of the ${name}.`
+            };
+
+            return templates[tone] || templates.professional;
+        }
+    </script>
+</body>
+</html> 
